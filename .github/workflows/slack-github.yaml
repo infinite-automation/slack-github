@@ -7,7 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: build
-        run: echo "build complte"
+        run: |
+          exit 1
+          echo "build complte"
 
       - name: send success message
         if: success()
@@ -17,3 +19,16 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
               text: "workflow completed sucessfully"
+
+        
+      - name: send failure notification
+        if: failure()
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{secrets.SLACK_WEBHOOK_URL}}
+          webhook-type: incoming-webhook
+          payload: | 
+              workflow: ${{github.workflow}}
+              branch: ${{github.ref_name}}
+              status: ${{job.status}}
+              Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
