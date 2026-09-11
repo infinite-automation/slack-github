@@ -1,35 +1,92 @@
-name: slack notification demo
+name: Teams Notification Demo
+
 on:
   push:
 
 jobs:
-  buils:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: build
+      - name: Build
         run: |
           exit 1
-          echo "build complte"
+          echo "Build complete"
 
-      - name: send success message
+      - name: Send success notification
         if: success()
-        uses: slackapi/slack-github-action@v4.0.0
-        with:
-          webhook: ${{secrets.SLACK_WEBHOOK_URL}}
-          webhook-type: incoming-webhook
-          payload: |
-              text: "workflow completed sucessfully"
+        shell: bash
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "type": "message",
+              "attachments": [
+                {
+                  "contentType": "application/vnd.microsoft.card.adaptive",
+                  "content": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.4",
+                    "body": [
+                      {
+                        "type": "TextBlock",
+                        "text": "✅ Workflow completed successfully",
+                        "weight": "Bolder",
+                        "size": "Medium"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }' \
+            "${{ secrets.TEAMS_WEBHOOK_URL }}"
 
-        
-      - name: send failure notification
+      - name: Send failure notification
         if: failure()
-        uses: slackapi/slack-github-action@v4.0.0
-        with:
-          webhook: ${{secrets.SLACK_WEBHOOK_URL}}
-          webhook-type: incoming-webhook
-          payload: | 
-            text: |
-              workflow: ${{github.workflow}}
-              branch: ${{github.ref_name}}
-              status: ${{job.status}}
-              Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "type": "message",
+              "attachments": [
+                {
+                  "contentType": "application/vnd.microsoft.card.adaptive",
+                  "content": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.4",
+                    "body": [
+                      {
+                        "type": "TextBlock",
+                        "text": "❌ Workflow failed",
+                        "weight": "Bolder",
+                        "size": "Medium"
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "Workflow: ${{ github.workflow }}",
+                        "wrap": true
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "Branch: ${{ github.ref_name }}",
+                        "wrap": true
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "Status: ${{ job.status }}",
+                        "wrap": true
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "Workflow URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                        "wrap": true
+                      }
+                    ]
+                  }
+                }
+              ]
+            }' \
+            "${{ secrets.TEAMS_WEBHOOK_URL }}"
